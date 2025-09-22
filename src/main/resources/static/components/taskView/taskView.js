@@ -23,7 +23,6 @@ export default class TaskView extends HTMLElement {
 
   constructor() {
     super();
-    /** @type {string} base URL for services, from data-serviceurl */
     this._baseUrl = "./api";
     /** @type {ShadowRoot} */
     this.attachShadow({ mode: "open" });
@@ -37,12 +36,10 @@ export default class TaskView extends HTMLElement {
     /** @type {HTMLElement} */
     this.$taskBox = this.shadowRoot.querySelector("task-box");
 
-    // Bind handlers
     this._onNewTaskClick = this._onNewTaskClick.bind(this);
   }
 
   connectedCallback() {
-    // Base URL from attribute (relative path required)
     const attr = this.getAttribute("data-serviceurl");
     if (attr && attr.trim() !== "") this._baseUrl = attr.trim();
 
@@ -68,18 +65,14 @@ export default class TaskView extends HTMLElement {
     this._setMessage("Waiting for server data.");
     this._setNewButtonEnabled(false);
 
-    // Load statuses first (needed by TaskBox & TaskList)
     const statuses = await this._fetchStatuses();
     this._applyStatuses(statuses);
 
-    // Initialize callbacks only after statuses are known
     this._wireCallbacks();
 
-    // Load initial tasks
     const tasks = await this._fetchTaskList();
     this._renderTasks(tasks);
 
-    // Enable the New Task button
     this._setNewButtonEnabled(true);
   }
 
@@ -142,7 +135,6 @@ export default class TaskView extends HTMLElement {
   _renderTasks(tasks) {
     // Show each task through TaskList API
     for (const t of tasks) {
-      // Expected shape: {id, title, status}
       this.$taskList.showTask(t);
     }
     this._updateEmptyState();
@@ -163,7 +155,6 @@ export default class TaskView extends HTMLElement {
   }
 
   _setMessage(text) {
-    // Safe text only — avoid innerHTML with external data
     this.$message.style.display = "";
     this.$message.replaceChildren(); // clear
     const p = document.createElement("p");
@@ -197,7 +188,6 @@ export default class TaskView extends HTMLElement {
     const url = `${this._baseUrl}/tasklist`;
     const data = await this._fetchJSON(url, { method: "GET" });
     if (!data || data.responseStatus !== true || !Array.isArray(data.tasks)) {
-      // Show empty state but not fatal
       return [];
     }
     return data.tasks;
@@ -239,10 +229,7 @@ export default class TaskView extends HTMLElement {
   }
 
   async _fetchJSON(url, init) {
-    // Relative URLs only; do not assume host changes
     const resp = await fetch(url, init);
-    // Spring Boot returns JSON with content-type application/json; charset=utf-8
-    // but we'll be tolerant and still try json if ok.
     if (!resp.ok) {
       throw new Error(`${resp.status} ${resp.statusText}`);
     }
